@@ -1,9 +1,9 @@
-from models import Vehicle, ElectricVehicle
+from vehicle_factory import VehicleFactory
 
 class ParkingLot:
     """
     Manages the state and operations of a single parking lot level.
-    This class is decoupled from any UI framework.
+    This class is decoupled from any UI framework and vehicle creation logic.
     """
     def __init__(self):
         self.capacity = 0
@@ -13,44 +13,41 @@ class ParkingLot:
         self.evSlots = []
         self.numOfOccupiedSlots = 0
         self.numOfOccupiedEvSlots = 0
-        # The slotid and slotEvId were behaving like simple counters but were
-        # being returned as the allocated slot, which is incorrect.
-        # The actual slot ID is the index in the list. This is a bug fix.
+        self.factory = VehicleFactory()
 
     def create_parking_lot(self, capacity, ev_capacity, level):
         """Initializes or resets the parking lot with a given capacity."""
         self.capacity = capacity
         self.evCapacity = ev_capacity
         self.level = level
-        self.slots = [-1] * capacity
-        self.evSlots = [-1] * ev_capacity
+        self.slots = [None] * capacity
+        self.evSlots = [None] * ev_capacity
         self.numOfOccupiedSlots = 0
         self.numOfOccupiedEvSlots = 0
         return f'Created a parking lot with {capacity} regular slots and {ev_capacity} ev slots on level: {level}\n'
 
     def _get_empty_slot(self):
         """Finds the first available regular parking slot."""
-        for i in range(len(self.slots)):
-            if self.slots[i] == -1:
+        for i, slot in enumerate(self.slots):
+            if slot is None:
                 return i
         return -1
 
     def _get_empty_ev_slot(self):
         """Finds the first available EV parking slot."""
-        for i in range(len(self.evSlots)):
-            if self.evSlots[i] == -1:
+        for i, slot in enumerate(self.evSlots):
+            if slot is None:
                 return i
         return -1
 
-    def park(self, regnum, make, model, color, is_electric, is_motorcycle):
-        """Parks a vehicle in an appropriate slot."""
-        if is_electric:
+    def park(self, vehicle_type, regnum, make, model, color, is_electric):
+        """Parks a vehicle created by the factory in an appropriate slot."""
+        vehicle = self.factory.create_vehicle(vehicle_type, regnum, make, model, color, is_electric)
+
+        if vehicle.is_electric:
             if self.numOfOccupiedEvSlots < self.evCapacity:
                 slot_id = self._get_empty_ev_slot()
-                if is_motorcycle:
-                    self.evSlots[slot_id] = ElectricVehicle.ElectricBike(regnum, make, model, color)
-                else:
-                    self.evSlots[slot_id] = ElectricVehicle.ElectricCar(regnum, make, model, color)
+                self.evSlots[slot_id] = vehicle
                 self.numOfOccupiedEvSlots += 1
                 return f'Allocated EV slot number: {slot_id + 1}\n'
             else:
@@ -58,10 +55,7 @@ class ParkingLot:
         else:
             if self.numOfOccupiedSlots < self.capacity:
                 slot_id = self._get_empty_slot()
-                if is_motorcycle:
-                    self.slots[slot_id] = Vehicle.Motorcycle(regnum, make, model, color)
-                else:
-                    self.slots[slot_id] = Vehicle.Car(regnum, make, model, color)
+                self.slots[slot_id] = vehicle
                 self.numOfOccupiedSlots += 1
                 return f'Allocated slot number: {slot_id + 1}\n'
             else:
@@ -69,18 +63,17 @@ class ParkingLot:
 
     def leave(self, slot_id, is_electric):
         """Removes a vehicle from the specified slot."""
-        # Adjust for 0-based index
         slot_index = slot_id - 1
         if is_electric:
-            if 0 <= slot_index < self.evCapacity and self.evSlots[slot_index] != -1:
-                self.evSlots[slot_index] = -1
+            if 0 <= slot_index < self.evCapacity and self.evSlots[slot_index] is not None:
+                self.evSlots[slot_index] = None
                 self.numOfOccupiedEvSlots -= 1
                 return f'Slot number {slot_id} is free\n'
             else:
                 return f"Unable to remove car from EV slot: {slot_id}\n"
         else:
-            if 0 <= slot_index < self.capacity and self.slots[slot_index] != -1:
-                self.slots[slot_index] = -1
+            if 0 <= slot_index < self.capacity and self.slots[slot_index] is not None:
+                self.slots[slot_index] = None
                 self.numOfOccupiedSlots -= 1
                 return f'Slot number {slot_id} is free\n'
             else:
@@ -90,12 +83,12 @@ class ParkingLot:
         """Returns a string detailing the status of all occupied slots."""
         status_report = "Vehicles\nSlot\tFloor\tReg No.\t\tColor \t\tMake \t\tModel\n"
         for i, vehicle in enumerate(self.slots):
-            if vehicle != -1:
+            if vehicle is not None:
                 status_report += f"{i+1}\t{self.level}\t{vehicle.regnum}\t\t{vehicle.color}\t\t{vehicle.make}\t\t{vehicle.model}\n"
         
         status_report += "\nElectric Vehicles\nSlot\tFloor\tReg No.\t\tColor \t\tMake \t\tModel\n"
         for i, vehicle in enumerate(self.evSlots):
-            if vehicle != -1:
+            if vehicle is not None:
                 status_report += f"{i+1}\t{self.level}\t{vehicle.regnum}\t\t{vehicle.color}\t\t{vehicle.make}\t\t{vehicle.model}\n"
         return status_report
 
@@ -103,14 +96,14 @@ class ParkingLot:
         """Returns a string detailing the charge status of all EV vehicles."""
         charge_report = "Electric Vehicle Charge Levels\nSlot\tFloor\tReg No.\t\tCharge %\n"
         for i, vehicle in enumerate(self.evSlots):
-            if vehicle != -1:
+            if vehicle is not None:
                 charge_report += f"{i+1}\t{self.level}\t{vehicle.regnum}\t\t{vehicle.charge}\n"
         return charge_report
 
     def find_reg_nums_by_color(self, color):
         """Returns registration numbers for vehicles of a specific color."""
-        reg_nums = [v.regnum for v in self.slots if v != -1 and v.color.lower() == color.lower()]
-        ev_reg_nums = [v.regnum for v in self.evSlots if v != -1 and v.color.lower() == color.lower()]
+        reg_nums = [v.regnum for v in self.slots if v is not None and v.color.lower() == color.lower()]
+        ev_reg_nums = [v.regnum for v in self.evSlots if v is not None and v.color.lower() == color.lower()]
         
         result = ""
         if reg_nums:
@@ -121,8 +114,8 @@ class ParkingLot:
 
     def find_slot_nums_by_color(self, color):
         """Returns slot numbers for vehicles of a specific color."""
-        slot_nums = [str(i+1) for i, v in enumerate(self.slots) if v != -1 and v.color.lower() == color.lower()]
-        ev_slot_nums = [str(i+1) for i, v in enumerate(self.evSlots) if v != -1 and v.color.lower() == color.lower()]
+        slot_nums = [str(i+1) for i, v in enumerate(self.slots) if v is not None and v.color.lower() == color.lower()]
+        ev_slot_nums = [str(i+1) for i, v in enumerate(self.evSlots) if v is not None and v.color.lower() == color.lower()]
 
         result = ""
         if slot_nums:
@@ -134,11 +127,11 @@ class ParkingLot:
     def find_slot_num_by_reg(self, regnum):
         """Returns the slot number for a specific registration number."""
         for i, v in enumerate(self.slots):
-            if v != -1 and v.regnum.lower() == regnum.lower():
+            if v is not None and v.regnum.lower() == regnum.lower():
                 return f"Identified slot: {i + 1}\n"
         
         for i, v in enumerate(self.evSlots):
-            if v != -1 and v.regnum.lower() == regnum.lower():
+            if v is not None and v.regnum.lower() == regnum.lower():
                 return f"Identified slot (EV): {i + 1}\n"
         
         return "Not found\n"

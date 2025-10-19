@@ -55,3 +55,20 @@ Following the initial cleanup, the next major focus was to refactor the applicat
     3.  A new UI-centric class, `ParkingLotApp`, was created in `app.py`. This class is responsible for building the GUI.
     4.  The `ParkingLotApp` holds an *instance* of the `ParkingLot` class. Its event handler methods (e.g., `_handle_park_car`) now act as intermediaries: they gather input from the UI, call the appropriate methods on the `parking_lot` instance, receive the returned data, and then update the UI accordingly.
 *   **Justification:** This refactoring establishes a clear boundary between the *model* (the `ParkingLot` class, which handles data and business rules) and the *view/presenter* (the `ParkingLotApp` class, which handles presentation and user interaction). This separation is a cornerstone of robust software design. It dramatically improves **testability** (we can now write unit tests for `ParkingLot`), **reusability** (the `ParkingLot` logic can be imported anywhere), and **maintainability** (UI changes will not affect the core logic, and vice versa).
+### **Part 3: Implementing Design Patterns and Principles**
+
+With a clean architecture in place, the project's focus shifted to improving the object-oriented design by applying established principles and design patterns. This phase addressed code duplication and improper separation of responsibilities.
+
+**7. Anti-Pattern: Unnecessary Abstractions and Code Duplication**
+
+*   **Observation:** The codebase contained two parallel class hierarchies for vehicles: one starting with a `Vehicle` base class and another with an `ElectricVehicle` base class. Both base classes duplicated common attributes (`regnum`, `make`, `model`, `color`) and their corresponding getter methods. This is a classic violation of the **Don't Repeat Yourself (DRY)** principle, which leads to maintenance issues.
+*   **Action Taken:** The `ElectricVehicle.py` file was eliminated entirely. The `Vehicle` class in `models/Vehicle.py` was refactored to be the single base class for all vehicle types. It was enhanced to include an `is_electric` flag and a `charge` attribute, which are conditionally initialized. This creates a single, unified, and logical inheritance tree where an "electric car" is simply a `Car` object with its `is_electric` flag set to true.
+*   **Justification:** This change dramatically simplifies the domain model. By creating a single source of truth for vehicle attributes, we make the code easier to understand and modify. Future changes to vehicle properties only need to be made in one place, reducing development effort and the likelihood of introducing bugs.
+
+**8. Design Pattern: Factory Method for Object Creation**
+
+*   **Observation:** The `park` method within the `ParkingLot` class was responsible for both parking a vehicle *and* creating the vehicle object itself. This violated the **Single Responsibility Principle (SRP)**, which states that a class should have only one reason to change. The `ParkingLot` was coupled to the concrete `Car` and `Motorcycle` classes, meaning if a new vehicle type were added, the `ParkingLot` class itself would need to be modified.
+*   **Action Taken:** The **Factory Method** creational design pattern was implemented.
+    1.  A new `VehicleFactory` class was created. Its sole purpose is to handle the logic of instantiating and returning specific vehicle objects based on input parameters (e.g., `vehicle_type`).
+    2.  The `ParkingLot` class was refactored to use this factory. Instead of containing `if/else` logic to create vehicles, it now simply calls `self.factory.create_vehicle(...)`.
+*   **Justification:** The introduction of a factory decouples the `ParkingLot` (the *client*) from the concrete `Vehicle` classes (the *products*). This is a powerful technique that localizes the logic for object creation. The `ParkingLot` no longer needs to know about every type of vehicle that exists. To add a new `Van` type, we would only need to update the `VehicleFactory`, with no changes required in `ParkingLot`, making the system more flexible, scalable, and easier to maintain.

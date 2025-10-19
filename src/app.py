@@ -108,20 +108,21 @@ class ParkingLotApp:
         self._output(result)
 
     def _handle_park_car(self):
+        vehicle_type = 'motorcycle' if self.is_motorcycle_var.get() else 'car'
         result = self.parking_lot.park(
+            vehicle_type,
             self.reg_var.get(), 
             self.make_var.get(), 
             self.model_var.get(), 
             self.color_var.get(), 
-            self.is_electric_var.get(), 
-            self.is_motorcycle_var.get()
+            bool(self.is_electric_var.get())
         )
         self._output(result)
 
     def _handle_remove_car(self):
         result = self.parking_lot.leave(
             int(self.remove_slot_var.get()), 
-            self.remove_is_electric_var.get()
+            bool(self.remove_is_electric_var.get())
         )
         self._output(result)
 
