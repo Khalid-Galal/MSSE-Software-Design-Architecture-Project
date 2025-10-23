@@ -72,3 +72,17 @@ With a clean architecture in place, the project's focus shifted to improving the
     1.  A new `VehicleFactory` class was created. Its sole purpose is to handle the logic of instantiating and returning specific vehicle objects based on input parameters (e.g., `vehicle_type`).
     2.  The `ParkingLot` class was refactored to use this factory. Instead of containing `if/else` logic to create vehicles, it now simply calls `self.factory.create_vehicle(...)`.
 *   **Justification:** The introduction of a factory decouples the `ParkingLot` (the *client*) from the concrete `Vehicle` classes (the *products*). This is a powerful technique that localizes the logic for object creation. The `ParkingLot` no longer needs to know about every type of vehicle that exists. To add a new `Van` type, we would only need to update the `VehicleFactory`, with no changes required in `ParkingLot`, making the system more flexible, scalable, and easier to maintain.
+
+### **Part 4: Ensuring Application Robustness**
+
+A key requirement for any software is the ability to handle unexpected or invalid user input without failing. The original prototype was brittle and would crash if the user did not provide input in the exact format the program expected. This phase focused on rectifying this issue.
+
+**9. Anti-Pattern: Crashing on Invalid User Input / Improper Exception Handling**
+
+*   **Observation:** The application performed direct type conversions on user input (e.g., `int(reg_slots_var.get())`). If a user entered text that could not be converted, such as "five" or leaving the field blank, the program would raise a `ValueError` and immediately crash. This provides a poor user experience and demonstrates a lack of defensive programming.
+*   **Action Taken:**
+    1.  The code sections responsible for unsafe type conversions in the `app.py` file were wrapped in `try...except` blocks.
+    2.  These blocks are configured to specifically catch the `ValueError` exception.
+    3.  Within the `except` block, instead of allowing the program to terminate, a clear error message is generated and displayed to the user in the application's own output text field. For example, `_output("ERROR: Please enter valid numbers for slots and level.\n")`.
+    4.  Additionally, basic validation was added to the car parking handler to ensure all necessary fields are filled out.
+*   **Justification:** This demonstrates the correct way to handle exceptions. We are not just preventing the application from crashing; we are providing direct, contextual feedback to the user, guiding them to correct their input. This makes the application significantly more robust and user-friendly. By catching a *specific* exception (`ValueError`), we avoid masking other potential bugs, which is a common pitfall of overly broad `except:` clauses. This directly addresses the anti-pattern of improper exception handling and is a critical step in creating reliable software.

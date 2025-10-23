@@ -11,7 +11,7 @@ class ParkingLotApp:
         self.parking_lot = ParkingLot()
 
         self.root.title("Parking Lot Manager")
-        self.root.geometry("650x850")
+        self.root.geometry("600x700")
         self.root.resizable(0, 0)
         
         # --- UI Variables ---
@@ -100,14 +100,21 @@ class ParkingLotApp:
         self.tfield.insert(tk.INSERT, message)
 
     def _handle_make_lot(self):
-        result = self.parking_lot.create_parking_lot(
-            int(self.reg_slots_var.get()), 
-            int(self.ev_slots_var.get()), 
-            int(self.level_var.get())
-        )
-        self._output(result)
+        try:
+            reg_slots = int(self.reg_slots_var.get())
+            ev_slots = int(self.ev_slots_var.get())
+            level = int(self.level_var.get())
+            result = self.parking_lot.create_parking_lot(reg_slots, ev_slots, level)
+            self._output(result)
+        except ValueError:
+            self._output("ERROR: Please enter valid numbers for slots and level.\n")
 
     def _handle_park_car(self):
+        # Basic validation to ensure required fields are not empty
+        if not all([self.reg_var.get(), self.make_var.get(), self.model_var.get(), self.color_var.get()]):
+            self._output("ERROR: Please fill in all vehicle details.\n")
+            return
+            
         vehicle_type = 'motorcycle' if self.is_motorcycle_var.get() else 'car'
         result = self.parking_lot.park(
             vehicle_type,
@@ -120,11 +127,15 @@ class ParkingLotApp:
         self._output(result)
 
     def _handle_remove_car(self):
-        result = self.parking_lot.leave(
-            int(self.remove_slot_var.get()), 
-            bool(self.remove_is_electric_var.get())
-        )
-        self._output(result)
+        try:
+            slot_id = int(self.remove_slot_var.get())
+            result = self.parking_lot.leave(
+                slot_id, 
+                bool(self.remove_is_electric_var.get())
+            )
+            self._output(result)
+        except ValueError:
+            self._output("ERROR: Please enter a valid number for the slot ID.\n")
 
     def _handle_slot_num_by_reg(self):
         result = self.parking_lot.find_slot_num_by_reg(self.find_slot_by_reg_var.get())
