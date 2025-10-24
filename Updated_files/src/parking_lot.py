@@ -100,11 +100,31 @@ class ParkingLot:
                 charge_report += f"{i+1}\t{self.level}\t{vehicle.regnum}\t\t{vehicle.charge}\n"
         return charge_report
 
+    def _find_vehicles(self, condition):
+        """
+        A generic search method that finds vehicles based on a condition.
+        
+        Args:
+            condition (callable): A function that takes a vehicle and returns True for a match.
+            
+        Yields:
+            A tuple of (vehicle, slot_id, is_electric).
+        """
+        for i, vehicle in enumerate(self.slots):
+            if vehicle is not None and condition(vehicle):
+                yield (vehicle, i + 1, False)
+        for i, vehicle in enumerate(self.evSlots):
+            if vehicle is not None and condition(vehicle):
+                yield (vehicle, i + 1, True)
+
     def find_reg_nums_by_color(self, color):
         """Returns registration numbers for vehicles of a specific color."""
-        reg_nums = [v.regnum for v in self.slots if v is not None and v.color.lower() == color.lower()]
-        ev_reg_nums = [v.regnum for v in self.evSlots if v is not None and v.color.lower() == color.lower()]
+        condition = lambda v: v.color.lower() == color.lower()
+        found_vehicles = list(self._find_vehicles(condition))
         
+        reg_nums = [v.regnum for v, _, is_electric in found_vehicles if not is_electric]
+        ev_reg_nums = [v.regnum for v, _, is_electric in found_vehicles if is_electric]
+
         result = ""
         if reg_nums:
             result += "Registration Numbers: " + ', '.join(reg_nums) + "\n"
@@ -114,8 +134,11 @@ class ParkingLot:
 
     def find_slot_nums_by_color(self, color):
         """Returns slot numbers for vehicles of a specific color."""
-        slot_nums = [str(i+1) for i, v in enumerate(self.slots) if v is not None and v.color.lower() == color.lower()]
-        ev_slot_nums = [str(i+1) for i, v in enumerate(self.evSlots) if v is not None and v.color.lower() == color.lower()]
+        condition = lambda v: v.color.lower() == color.lower()
+        found_vehicles = list(self._find_vehicles(condition))
+        
+        slot_nums = [str(slot_id) for _, slot_id, is_electric in found_vehicles if not is_electric]
+        ev_slot_nums = [str(slot_id) for _, slot_id, is_electric in found_vehicles if is_electric]
 
         result = ""
         if slot_nums:
@@ -126,12 +149,11 @@ class ParkingLot:
 
     def find_slot_num_by_reg(self, regnum):
         """Returns the slot number for a specific registration number."""
-        for i, v in enumerate(self.slots):
-            if v is not None and v.regnum.lower() == regnum.lower():
-                return f"Identified slot: {i + 1}\n"
-        
-        for i, v in enumerate(self.evSlots):
-            if v is not None and v.regnum.lower() == regnum.lower():
-                return f"Identified slot (EV): {i + 1}\n"
-        
-        return "Not found\n"
+        condition = lambda v: v.regnum.lower() == regnum.lower()
+        # Find the first match, if any
+        try:
+            _, slot_id, is_electric = next(self._find_vehicles(condition))
+            slot_type = "(EV)" if is_electric else ""
+            return f"Identified slot {slot_type}: {slot_id}\n"
+        except StopIteration:
+            return "Not found\n"

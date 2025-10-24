@@ -86,3 +86,16 @@ A key requirement for any software is the ability to handle unexpected or invali
     3.  Within the `except` block, instead of allowing the program to terminate, a clear error message is generated and displayed to the user in the application's own output text field. For example, `_output("ERROR: Please enter valid numbers for slots and level.\n")`.
     4.  Additionally, basic validation was added to the car parking handler to ensure all necessary fields are filled out.
 *   **Justification:** This demonstrates the correct way to handle exceptions. We are not just preventing the application from crashing; we are providing direct, contextual feedback to the user, guiding them to correct their input. This makes the application significantly more robust and user-friendly. By catching a *specific* exception (`ValueError`), we avoid masking other potential bugs, which is a common pitfall of overly broad `except:` clauses. This directly addresses the anti-pattern of improper exception handling and is a critical step in creating reliable software.
+
+### **Part 5: Improving Logic with the Strategy Pattern**
+
+The final code improvement phase focused on refining the internal algorithms of the `ParkingLot` class to reduce complexity and duplication, which was accomplished by implementing a second design pattern.
+
+**10. Anti-Pattern: Clumsy, Unnecessary Loop Statements**
+
+*   **Observation:** Within the `ParkingLot` class, multiple methods existed to query vehicle information (`find_reg_nums_by_color`, `find_slot_nums_by_color`, `find_slot_num_by_reg`). Each of these methods contained its own `for` loops to iterate through the `slots` and `evSlots` lists. This resulted in significant code duplication, as the looping mechanism was repeated in every method, with only the inner conditional logic being different.
+*   **Action Taken:** The **Strategy** behavioral design pattern was implemented to eliminate this redundancy.
+    1.  A single private helper method, `_find_vehicles`, was created. This method contains the master logic for iterating through all occupied slots (both regular and EV).
+    2.  This helper method accepts a callable function, `condition`, as an argument. This function represents the "strategy" and encapsulates the specific filtering logic (e.g., checking for a matching color or registration number).
+    3.  The original public query methods were refactored to be simple, concise one-liners. They now define their specific search criteria using a `lambda` function (the strategy) and pass it to the `_find_vehicles` method.
+*   **Justification:** This refactoring provides several benefits. It perfectly adheres to the **Don't Repeat Yourself (DRY)** principle by centralizing the iteration logic. It is a practical and effective implementation of the Strategy pattern, where different algorithms (search criteria) are encapsulated and made interchangeable. Most importantly, it makes the system highly extensible. To add a new query, such as "find vehicles by make," a developer only needs to add a new one-line public method with the appropriate lambda strategy, without writing any new loops, thereby reducing development time and the potential for error.
