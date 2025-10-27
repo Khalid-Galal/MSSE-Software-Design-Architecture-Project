@@ -43,7 +43,8 @@ class ParkingLot:
     def park(self, vehicle_type, regnum, make, model, color, is_electric):
         """Parks a vehicle created by the factory in an appropriate slot."""
         vehicle = self.factory.create_vehicle(vehicle_type, regnum, make, model, color, is_electric)
-
+        if vehicle is None:
+            return "ERROR: Vehicle creation failed. Check the vehicle type.\n"
         if vehicle.is_electric:
             if self.numOfOccupiedEvSlots < self.evCapacity:
                 slot_id = self._get_empty_ev_slot()
