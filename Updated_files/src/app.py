@@ -11,7 +11,7 @@ class ParkingLotApp:
         self.parking_lot = ParkingLot()
 
         self.root.title("Parking Lot Manager")
-        self.root.geometry("600x700")
+        self.root.geometry("600x900")
         self.root.resizable(0, 0)
         
         # --- UI Variables ---
@@ -35,7 +35,7 @@ class ParkingLotApp:
     def _create_widgets(self):
         """Creates and lays out all the widgets in the main window."""
         # --- Output Text Field ---
-        self.tfield = tk.Text(self.root, width=70, height=15)
+        self.tfield = tk.Text(self.root, width=70, height=25)
         
         # --- Lot Creation Frame ---
         label_head = tk.Label(self.root, text='Parking Lot Manager', font='Arial 14 bold')
